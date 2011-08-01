@@ -3,11 +3,17 @@ July 27, 2011
 robotgrrl.com
 
 TODO:
-add in manoi tomorrow
+check the manoi comm board functions to make sure 
+they are the same updated version as in robobrrd
+
+when asking if the ET received data, we should
+probably try asking a few times... (but, doesnt
+the library stick it in a while loop?)
+
 
 #pragma mark - Connections
 
-RoboBrrd
+::RoboBrrd::
 
 Main<->Comm: 
 Serial1 (with switches (cause it used to be a standard arduino))
@@ -16,10 +22,14 @@ NSS (RX: 7, TX: 8)
 
 Comm<->XB: Serial (with switches)
 
-MANOI
-Main->Comm:
-Comm->Main:
-Comm<->XB: 
+::MANOI::
+Main<->Comm:
+Serial1 (no switches)
+<->
+NSS (RX: 5, TX: 4)
+
+Comm<->XB: Serial (with big black switches)
+
 
 #pragma mark - EasyTransfer Universal Message Packet
 
