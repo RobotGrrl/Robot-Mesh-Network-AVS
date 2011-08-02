@@ -139,6 +139,15 @@ void setup() {
 
 void loop() {
 	
+    sendMN();
+    
+    // readMN();
+    
+    
+}
+
+void sendMN() {
+    
     // Send out the interrupt
     digitalWrite(interruptOutgoing, HIGH);
     delay(10);
@@ -187,7 +196,9 @@ void loop() {
     if(debug) Serial.println("howdy");
     delay(3000);
     
-    /*
+}
+
+void readMN() {
     
     if(debug) Serial << "wee!" << endl;
     
@@ -202,7 +213,7 @@ void loop() {
         delay(100);
         
         if(MNrx_ET.receiveData()) {
-        //if(nssMANOI.available() >= 3) {
+            //if(nssMANOI.available() >= 3) {
             
             if(debug) Serial << "it was available!" << endl;
             if(debug) Serial << nssMANOI.read() << endl;
@@ -219,7 +230,7 @@ void loop() {
                 digitalWrite(LED, HIGH);
                 
             }// else {
-             //   if(debug) Serial << "attention was not 1!" << endl;
+            //   if(debug) Serial << "attention was not 1!" << endl;
             //} // why does adding an else here make it not work? WTF!
             
         } else {
@@ -243,88 +254,13 @@ void loop() {
     digitalWrite(STATUS, !digitalRead(STATUS));
 	delay(50);
     
-     */
-    
-    
-    
-    
-     
-    /*
-    byte msgXB = nextXB();
-    
-    // --- E
-	if(msgXB == 'E') {
-		
-		digitalWrite(STATUS, LOW);
-		
-		if(debug) Serial << "Byte is E" << endl;
-		
-		// Send out the interrupt
-		digitalWrite(interruptOutgoing, HIGH);
-		outstandingComm = true;
-		delay(50);
-		digitalWrite(interruptOutgoing, LOW);
-		
-		while(!triggerFlag) {
-			
-			// Waiting for trigger to send the data
-			if(debug) Serial << "Waiting for the trigger" << endl;
-			digitalWrite(LED, HIGH);
-			delay(50);
-			digitalWrite(LED, LOW);
-			delay(50);
-			
-			if(triggerAttemptsCount >= 100) {
-				triggerAttemptsCount = 0;
-				break;
-			}
-			
-			triggerAttemptsCount++;
-			
-		}
-		
-		if(triggerFlag) {
-			
-			// Sending the message now
-			nssMANOI.print("E");
-			
-			if(debug) Serial << "Sending the message now" << endl;
-			
-			outstandingComm = false;
-			
-			digitalWrite(LED, HIGH);
-			delay(1000);
-			digitalWrite(LED, LOW);
-			
-			triggerFlag = false;
-			
-		}
-		
-	}
-    
-    if(msgXB == 'P') {
-        relayMessage('P');
-    }
-    
-    if(msgXB == 'L') {
-        relayMessage('L');
-    }
-    
-    if(msgXB == 'R') {
-        relayMessage('R');
-    }
-    */
-     
-    /*
-    byte c = 'P';
-	// --- P
-    if(msgXB == 'P' || msgXB == 'L' || msgXB == 'R') {
-        relayMessage(c);
-	}
-     */
-     
-    
 }
+
+
+// * * * * * * *
+// Old things that I probably forgot and will end up
+// rewriting in some form >_>
+// * * * * * * * 
 
 void relayMessage(byte c) {
     

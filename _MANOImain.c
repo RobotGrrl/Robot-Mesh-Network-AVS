@@ -302,6 +302,13 @@ void loop() {
     //leftArmJingle(1);
     //tango(1);
     
+    readComm();
+    
+	
+}
+
+void readComm() {
+    
     
     while(!triggerFlag) {
         if(debug) Serial << "Trigger flag is false..." << endl;
@@ -359,124 +366,6 @@ void loop() {
         
     }
     
-    
-    /*
-	while(!triggerFlag) {
-		if(debug) Serial << "Trigger flag is false..." << endl;
-		digitalWrite(STATUS, !digitalRead(STATUS));
-		
-        if(millis()%500 == 0) {
-            updateLights();
-        }
-		
-		// Send some data to the communication board
-		if(second()%30 == 0 || second()%60 == 0) {
-			
-			digitalWrite(STATUS, LOW);
-			
-			digitalWrite(LED, HIGH);
-			delay(500);
-			digitalWrite(LED, LOW);
-			
-			// Signal that we want to send data
-			digitalWrite(interruptOutgoing, HIGH);
-			
-			while(!triggerFlag) {
-				// Waiting for trigger to send the data
-				if(debug) Serial << "Waiting for the trigger" << endl;
-				digitalWrite(LED, HIGH);
-				delay(50);
-				digitalWrite(LED, LOW);
-				delay(50);
-				// TODO: Make it give up at some point
-				
-				if(triggerAttemptCount >= 100) {
-					triggerAttemptCount = 0;
-					break;
-				}
-				
-				triggerAttemptCount++;
-				
-			}
-			
-			// Ready to send data
-			if(triggerFlag) {
-				
-				if(debug) Serial << "Going to send the message now" << endl;
-				
-				Serial1 << "E*";
-				
-				digitalWrite(LED, HIGH);
-				delay(1000);
-				digitalWrite(LED, LOW);
-				
-			}
-			
-			digitalWrite(interruptOutgoing, LOW);
-			triggerFlag = false;
-			
-		}
-		
-	}
-	
-	if(triggerFlag) {
-		
-		if(debug) Serial << "Trigger flag is set, sending outgoing interrupt" << endl;
-		digitalWrite(STATUS, LOW);
-		
-		digitalWrite(LED, HIGH);
-		
-		// Send the flag to receive the message
-		digitalWrite(interruptOutgoing, HIGH);
-		delay(10);
-        
-        byte y = nextByte();
-		
-		// Check if it's getting the message
-		if(y == 'E') {
-			// Show that we received the message
-			
-			if(debug) Serial << "Received the message" << endl;
-			
-			leftHandShake(1);
-			
-		}
-        
-        // --- Any
-        if(y == 'P' || y == 'L' || y == 'R') {
-            updateLights();
-        }
-        
-        // --- P
-        if(y == 'P') {
-            if(debug) Serial << "Received a P!";
-            bothArmJingle(1);
-            ssc.setFrame(homeFrame, 100, 100);
-        }
-        
-        // --- L
-        if(y == 'L') {
-            if(debug) Serial << "Received a L!";
-            leftHandShake(1);
-            ssc.setFrame(homeFrame, 100, 100);
-        }
-		
-        // --- R
-        if(y == 'R') {
-            if(debug) Serial << "Received a L!";
-            rightHandShake(1);
-            ssc.setFrame(homeFrame, 100, 100);
-        }
-        
-		
-		delay(50);
-		digitalWrite(LED, LOW);
-		digitalWrite(interruptOutgoing, LOW);
-		triggerFlag = false;
-		
-	}
-     */
-	
 }
 
 void trigger() {

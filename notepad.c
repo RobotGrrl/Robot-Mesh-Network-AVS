@@ -3,12 +3,11 @@ July 27, 2011
 robotgrrl.com
 
 TODO:
-check the manoi comm board functions to make sure 
-they are the same updated version as in robobrrd
 
-when asking if the ET received data, we should
-probably try asking a few times... (but, doesnt
-the library stick it in a while loop?)
+tomorrow add in the xbee communication
+
+instead of Serial.available() > 0, try == 4?
+
 
 
 #pragma mark - Connections

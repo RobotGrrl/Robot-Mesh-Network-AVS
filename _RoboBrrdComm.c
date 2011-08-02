@@ -82,20 +82,8 @@ struct MESH_DATA {
     int world_F;
 };
 
-struct INTER_DATA {
-  
-    int action;
-    int param_1;
-    int param_2;
-    int param_3;
-    int param_4;
-    int param_5;
-    
-};
-
 //give a name to the group of data
 MESH_DATA RBdata_rx;
-INTER_DATA RBdata_tx;
 MESH_DATA XBdata;
 
 
@@ -186,6 +174,11 @@ void setup() {
 
 void loop() {    
     
+    sendRB();
+	
+}
+
+void sendRB() {
     // Send out the interrupt
     digitalWrite(interruptOutgoing, HIGH);
     delay(10);
@@ -233,75 +226,11 @@ void loop() {
     if(debug) Serial << "waiting..." << endl;
     if(debug) Serial.println("howdy");
     delay(3000);
-    
-    /*
-    
-    // * * * * * * * * * * * * * * *
-    // Check for messages from Xbee
-    // * * * * * * * * * * * * * * *
-    
-	if(nextXB() == 'E') {
-		
-		digitalWrite(STATUS, LOW);
-        delay(1000);
-		
-		if(debug) Serial << "Byte is E" << endl;
-        
-		// Send out the interrupt
-		digitalWrite(interruptOutgoing, HIGH);
-		outstandingComm = true;
-		delay(500);
-		digitalWrite(interruptOutgoing, LOW);
-		
-		while(!triggerFlag) {
-            
-            digitalWrite(LED, !digitalRead(LED));
-            delay(50);
-            
-			// Waiting for trigger to send the data
-			if(debug) Serial << "Waiting for the trigger" << endl;
-			
-			if(triggerAttemptsCount >= 100) {
-				triggerAttemptsCount = 0;
-				break;
-			}
-			
-			triggerAttemptsCount++;
-			
-		}
-		
-		if(triggerFlag) {
-            
-            digitalWrite(LED, LOW);
-            delay(50);
-			
-			// Sending the message now
-			nssROBOBRRD.print("E");
-			
-			if(debug) Serial << "Sending the message now" << endl;
-			
-			outstandingComm = false;
-			
-			digitalWrite(LED, HIGH);
-			delay(1000);
-			digitalWrite(LED, LOW);
-			
-			triggerFlag = false;
-			
-		} else {
-            digitalWrite(LED, LOW);
-        }
-		 
-         
-	}
-     
-     */
-	
 }
 
 
 // Testing
-void testReceive() {
+void readRB() {
     
     if(triggerFlag) {
         
