@@ -33,6 +33,20 @@ Comm<->XB: Serial (with big black switches)
 
 #pragma mark - EasyTransfer Universal Message Packet
 
+struct INTER_DATA {
+    
+    int action;
+    int param_1;
+    int param_2;
+    int param_3;
+    int param_4;
+    int param_5;
+    
+};
+
+action- whatever
+parameters- whatever (maybe sync the LEDs? lolz)
+
 attention int [-1, 1]
 valence int [-1, 1]
 stance int [-1, 1]
@@ -70,3 +84,6 @@ world_F int [1, x)
              int world_L;
              int world_R;
              int world_F;
+
+
+

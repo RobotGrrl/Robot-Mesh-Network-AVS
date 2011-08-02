@@ -56,6 +56,7 @@ int flagPin = 11;
 
 // EasyTransfer
 SoftEasyTransfer RBrx_ET;
+//SoftEasyTransfer RBtx_ET;
 EasyTransfer XB_ET;
 
 struct MESH_DATA {
@@ -81,8 +82,20 @@ struct MESH_DATA {
     int world_F;
 };
 
+struct INTER_DATA {
+  
+    int action;
+    int param_1;
+    int param_2;
+    int param_3;
+    int param_4;
+    int param_5;
+    
+};
+
 //give a name to the group of data
 MESH_DATA RBdata_rx;
+INTER_DATA RBdata_tx;
 MESH_DATA XBdata;
 
 
@@ -94,6 +107,9 @@ void setup() {
     if(debug) Serial << "Beginning setup" << endl;
 	nssROBOBRRD.begin(9600); // RB
     RBrx_ET.begin(details(RBdata_rx), &nssROBOBRRD);
+    // for some reason it can't do this... 
+    // we'll send raw data w/just delims for now
+    //RBtx_ET.begin(details(RBdata_tx), &nssROBOBRRD);
     XB_ET.begin(details(XBdata), &Serial);
     
 	// Interrupts
@@ -105,16 +121,20 @@ void setup() {
     
     pinMode(flagPin, INPUT);
     
-	/* Call Tlc.init() to setup the tlc.
-     You can optionally pass an initial PWM value (0 - 4095) for all channels.*/
-    pinMode(spkr, OUTPUT);
-    //Tlc.init(0);
-    
     // Outputs
 	pinMode(LED, OUTPUT);
 	pinMode(STATUS, OUTPUT);
     
+    pinMode(spkr, OUTPUT);
+    
     // ET Data
+    RBdata_tx.action = 1;
+    RBdata_tx.param_1 = 0;
+    RBdata_tx.param_2 = 0;
+    RBdata_tx.param_3 = 0;
+    RBdata_tx.param_4 = 0;
+    RBdata_tx.param_5 = 0;
+    
     RBdata_rx.attention = 0;
     RBdata_rx.valence = 0;
     RBdata_rx.stance = 0;
@@ -164,55 +184,55 @@ void setup() {
     
 }
 
-void loop() {
+void loop() {    
     
-    if(debug) Serial << "wee!" << endl;
+    // Send out the interrupt
+    digitalWrite(interruptOutgoing, HIGH);
+    delay(10);
+    digitalWrite(interruptOutgoing, LOW);
     
-    if(triggerFlag) {
+    while(!triggerFlag) {
         
-        Serial << "trigger flag!" << endl;
+        digitalWrite(LED, !digitalRead(LED));
+        delay(50);
         
-        // Send out the interrupt
-        digitalWrite(LED, HIGH);
-        digitalWrite(STATUS, LOW);
-		digitalWrite(interruptOutgoing, HIGH);
+        // Waiting for trigger to send the data
+        if(debug) Serial << "Waiting for the trigger" << endl;
         
-        if(RBrx_ET.receiveData()) {
-        //if(nssROBOBRRD.available() >= 3) {
-        
-            if(RBdata_rx.attention == 1) {
-            
-            if(debug) Serial << "it was available" << endl;
-            
-            for(int i=0; i<10; i++) {
-                digitalWrite(LED, !digitalRead(LED));
-                digitalWrite(STATUS, !digitalRead(STATUS));
-                delay(100);
-            }
-            digitalWrite(LED, HIGH);
-                
-            }
-
-        } else {
-            
-            if(debug) Serial << "it was not available" << endl;
-            
-            delay(2000);
-            
-            triggerFlag = false;
-            digitalWrite(LED, LOW);   
+        if(triggerAttemptsCount >= 100) {
+            triggerAttemptsCount = 0;
+            break;
         }
-                 
-        if(debug) Serial << "done" << endl;
         
-        triggerFlag = false;
-        digitalWrite(LED, LOW); 
-		digitalWrite(interruptOutgoing, LOW);
+        triggerAttemptsCount++;
         
     }
     
+    if(triggerFlag) {
+        
+        digitalWrite(LED, LOW);
+        delay(5);
+        
+        // Sending the message now
+        nssROBOBRRD.print("~A1!");
+        
+        if(debug) Serial << "Sending the message now" << endl;
+        
+        digitalWrite(LED, HIGH);
+        delay(1000);
+        digitalWrite(LED, LOW);
+        
+        triggerFlag = false;
+        
+    }
+    
+    
     digitalWrite(STATUS, !digitalRead(STATUS));
 	delay(50);
+    
+    if(debug) Serial << "waiting..." << endl;
+    if(debug) Serial.println("howdy");
+    delay(3000);
     
     /*
     
@@ -278,6 +298,57 @@ void loop() {
      */
 	
 }
+
+
+// Testing
+void testReceive() {
+    
+    if(triggerFlag) {
+        
+        Serial << "trigger flag!" << endl;
+        
+        // Send out the interrupt
+        digitalWrite(LED, HIGH);
+        digitalWrite(STATUS, LOW);
+		digitalWrite(interruptOutgoing, HIGH);
+        
+        if(RBrx_ET.receiveData()) {
+            //if(nssROBOBRRD.available() >= 3) {
+            
+            if(RBdata_rx.attention == 1) {
+                
+                if(debug) Serial << "it was available" << endl;
+                
+                for(int i=0; i<10; i++) {
+                    digitalWrite(LED, !digitalRead(LED));
+                    digitalWrite(STATUS, !digitalRead(STATUS));
+                    delay(100);
+                }
+                digitalWrite(LED, HIGH);
+                
+            }
+            
+        } else {
+            
+            if(debug) Serial << "it was not available" << endl;
+            
+            delay(2000);
+            
+            triggerFlag = false;
+            digitalWrite(LED, LOW);   
+        }
+        
+        if(debug) Serial << "done" << endl;
+        
+        triggerFlag = false;
+        digitalWrite(LED, LOW); 
+		digitalWrite(interruptOutgoing, LOW);
+        
+    }
+    
+}
+
+
 
 void trigger() {
 	triggerFlag = true;

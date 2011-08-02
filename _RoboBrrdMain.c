@@ -12,7 +12,7 @@
 #include <Streaming.h>
 #include <EasyTransfer.h>
 
-boolean debug = false;
+boolean debug = true;
 
 // Servos
 Servo mouth, leftwing, rightwing, leftright, updown;
@@ -78,7 +78,8 @@ int commAttemptCount = 0;
 volatile boolean triggerFlag = false;
 
 // EasyTransfer
-EasyTransfer ET;
+EasyTransfer CommTX;
+EasyTransfer CommRX;
 
 struct MESH_DATA {
     //put your variable definitions here for the data you want to send
@@ -103,7 +104,26 @@ struct MESH_DATA {
     int world_F;
 };
 
+struct INTER_DATA {
+    
+    int action;
+    int param_1;
+    int param_2;
+    int param_3;
+    int param_4;
+    int param_5;
+    
+};
+
 MESH_DATA RBdata_tx;
+INTER_DATA RBdata_rx;
+
+int rxBuffer[128];
+int rxIndex = 0;
+
+int action = 0;
+
+#define LENGTH 4
 
 // Initialize
 void setup() {
@@ -112,7 +132,8 @@ void setup() {
 	Serial.begin(9600);  // Console
     Serial1.begin(9600); // Comm
 	Serial2.begin(9600); // iPad
-    ET.begin(details(RBdata_tx), &Serial1); // Comm
+    CommTX.begin(details(RBdata_tx), &Serial1); // Comm TX
+    CommRX.begin(details(RBdata_rx), &Serial1); // Comm RX
     
 	// Interrupts
 	pinMode(interruptOutgoing, OUTPUT);
@@ -155,6 +176,13 @@ void setup() {
     moveBeak(180, 2, 10);
     
     // ET Data
+    RBdata_rx.action = 0;
+    RBdata_rx.param_1 = 0;
+    RBdata_rx.param_2 = 0;
+    RBdata_rx.param_3 = 0;
+    RBdata_rx.param_4 = 0;
+    RBdata_rx.param_5 = 0;
+    
     RBdata_tx.attention = 1;
     RBdata_tx.valence = 0;
     RBdata_tx.stance = 0;
@@ -174,15 +202,145 @@ void setup() {
     RBdata_tx.world_R = 0;
     RBdata_tx.world_F = 0;
     
-    delay(3000);
-    sendET();
+    //delay(3000);
+    //sendET();
     
 }
 
 void loop() {
     
-    updateLights(false);
-    delay(1000);
+    //updateLights(false);
+    //delay(1000);
+    
+    while(!triggerFlag) {
+        if(debug) Serial << "Trigger flag is false..." << endl;
+        updateLights(false);
+    }
+    
+    if(triggerFlag) {
+    
+        Serial << "The trigger flag!" << endl;
+        
+    
+        // Send the flag to receive the message
+        digitalWrite(interruptOutgoing, HIGH);
+        delay(5);
+        digitalWrite(interruptOutgoing, LOW);
+        
+        int action = 0;
+    
+        while(rxIndex < LENGTH) {
+            rxBuffer[rxIndex] = nextByte();
+            rxIndex++;
+        }
+    
+        //if(rxIndex == LENGTH) {
+        
+            if(debug) Serial << "Got the data!" << endl;
+        
+            char delim_start = (char)rxBuffer[0];
+            action = (int)rxBuffer[2]-'0';
+            char delim_end = (char)rxBuffer[3];
+        
+            Serial << "Action: " << action << endl;
+        
+            if(delim_start == '~' && delim_end == '!') {
+            
+                if(action == 1) {
+                
+                    if(debug) Serial << "Worked!" << endl;
+                
+                    boolean alt = false;
+                    for(int i=0; i<5; i++) {
+                        moveRightWing(alt);
+                        alt = !alt;
+                        delay(50);
+                    }
+                
+                } else {
+                    if(debug) Serial << "The action was not 1!" << endl;
+                }
+
+            }
+        
+            action = 0;
+            rxIndex = 0;
+        Serial1.flush();
+        
+        //}
+        
+        triggerFlag = false;
+        
+    }
+    
+    /*
+    while(!triggerFlag) {
+        if(debug) Serial << "Trigger flag is false..." << endl;
+        updateLights(false);
+    }
+    
+    if(triggerFlag) {
+     
+        if(debug) Serial << "Trigger flag is set, sending outgoing interrupt" << endl;
+     
+        // Send the flag to receive the message
+        digitalWrite(interruptOutgoing, HIGH);
+        delay(5);
+        digitalWrite(interruptOutgoing, LOW);
+     
+        // * * * * * * * * * * * * * *
+        // Check for the right messages
+        // * * * * * * * * * * * * * *
+     
+        int action = 0;
+        boolean keepGoing = true;
+        
+        if(Serial1.available() > 0) {
+            
+            rxBuffer[rxIndex++] = Serial1.read();
+            
+            if(rxIndex == LENGTH) {
+                char delim_start = (char)rxBuffer[0];
+                action = (int)rxBuffer[2];
+                char delim_end = (char)rxBuffer[3];
+                
+                if(delim_start != '~' || delim_end != '!') keepGoing = false; 
+                
+            }
+            
+            if(keepGoing) {
+            
+                if(action == 1) {
+                
+                    if(debug) Serial << "Worked!" << endl;
+                
+                    boolean alt = false;
+                    for(int i=0; i<5; i++) {
+                        moveRightWing(alt);
+                        alt = !alt;
+                        delay(50);
+                    }
+                
+                } else {
+                    if(debug) Serial << "The action was not 1" << endl;
+                }
+             
+                keepGoing = false;
+                
+            }
+            
+        } else {
+            if(debug) Serial << "Did not receive any data" << endl;
+        }     
+     
+        triggerFlag = false;
+     
+     }
+     
+     */
+     
+     
+     
     
     /*
      while(!triggerFlag) {
@@ -318,9 +476,9 @@ void trigger() {
 
 byte nextByte() {
 	while(1) {
-		if(Serial.available() > 0) {
+		if(Serial1.available() > 0) {
 			byte b = Serial1.read();
-			//if(debug) Serial << "Received byte: " << b << endl;
+			if(debug) Serial << "Received byte: " << b << endl;
             commAttemptCount = 0;
 			return b;
 		}
@@ -333,7 +491,7 @@ byte nextByte() {
 		
 		commAttemptCount++;
         
-		//if(debug) Serial << "Waiting for next byte" << endl;
+		if(debug) Serial << "Waiting for next byte" << endl;
 	}
 	
 }
@@ -501,7 +659,7 @@ void sendET() {
         
         if(debug) Serial << "Going to send the message now" << endl;
         
-        ET.sendData();
+        CommTX.sendData();
         
     }
     
