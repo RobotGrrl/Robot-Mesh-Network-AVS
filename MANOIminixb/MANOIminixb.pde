@@ -139,6 +139,56 @@ void setup() {
 
 void loop() {
 	
+    // Send out the interrupt
+    digitalWrite(interruptOutgoing, HIGH);
+    delay(10);
+    digitalWrite(interruptOutgoing, LOW);
+    
+    while(!triggerFlag) {
+        
+        digitalWrite(LED, !digitalRead(LED));
+        delay(50);
+        
+        // Waiting for trigger to send the data
+        if(debug) Serial << "Waiting for the trigger" << endl;
+        
+        if(triggerAttemptsCount >= 100) {
+            triggerAttemptsCount = 0;
+            break;
+        }
+        
+        triggerAttemptsCount++;
+        
+    }
+    
+    if(triggerFlag) {
+        
+        digitalWrite(LED, LOW);
+        delay(5);
+        
+        // Sending the message now
+        nssMANOI.print("~A1!");
+        
+        if(debug) Serial << "Sending the message now" << endl;
+        
+        digitalWrite(LED, HIGH);
+        delay(1000);
+        digitalWrite(LED, LOW);
+        
+        triggerFlag = false;
+        
+    }
+    
+    
+    digitalWrite(STATUS, !digitalRead(STATUS));
+	delay(50);
+    
+    if(debug) Serial << "waiting..." << endl;
+    if(debug) Serial.println("howdy");
+    delay(3000);
+    
+    /*
+    
     if(debug) Serial << "wee!" << endl;
     
     if(triggerFlag) {
@@ -193,6 +243,12 @@ void loop() {
     digitalWrite(STATUS, !digitalRead(STATUS));
 	delay(50);
     
+     */
+    
+    
+    
+    
+     
     /*
     byte msgXB = nextXB();
     

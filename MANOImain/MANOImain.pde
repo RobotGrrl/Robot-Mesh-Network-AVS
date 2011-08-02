@@ -184,6 +184,13 @@ struct MESH_DATA {
 
 MESH_DATA MNdata_tx;
 
+int rxBuffer[128];
+int rxIndex = 0;
+
+int action = 0;
+
+#define LENGTH 4
+
 // Initialize
 void setup() {
     
@@ -289,11 +296,69 @@ void loop() {
     //sendET();
     //delay(1000);
     
-    bothArmJingle(1);
-    feetJingle(1);
-    rightHandShake(1);
-    leftArmJingle(1);
-    tango(1);
+    //bothArmJingle(1);
+    //feetJingle(1);
+    //rightHandShake(1);
+    //leftArmJingle(1);
+    //tango(1);
+    
+    
+    while(!triggerFlag) {
+        if(debug) Serial << "Trigger flag is false..." << endl;
+        updateLights();
+    }
+    
+    if(triggerFlag) {
+        
+        Serial << "The trigger flag!" << endl;
+        
+        
+        // Send the flag to receive the message
+        digitalWrite(interruptOutgoing, HIGH);
+        delay(5);
+        digitalWrite(interruptOutgoing, LOW);
+        
+        int action = 0;
+        
+        while(rxIndex < LENGTH) {
+            rxBuffer[rxIndex] = nextByte();
+            rxIndex++;
+        }
+        
+        //if(rxIndex == LENGTH) {
+        
+        if(debug) Serial << "Got the data!" << endl;
+        
+        char delim_start = (char)rxBuffer[0];
+        action = (int)rxBuffer[2]-'0';
+        char delim_end = (char)rxBuffer[3];
+        
+        Serial << "Action: " << action << endl;
+        
+        if(delim_start == '~' && delim_end == '!') {
+            
+            if(action == 1) {
+                
+                if(debug) Serial << "Worked!" << endl;
+                
+                bothArmJingle(3);
+                
+            } else {
+                if(debug) Serial << "The action was not 1!" << endl;
+            }
+            
+        }
+        
+        action = 0;
+        rxIndex = 0;
+        Serial1.flush();
+        
+        //}
+        
+        triggerFlag = false;
+        
+    }
+    
     
     /*
 	while(!triggerFlag) {
