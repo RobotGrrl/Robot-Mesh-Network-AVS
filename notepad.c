@@ -4,6 +4,10 @@ robotgrrl.com
 
 TODO:
 
+test ram optimization more. optimize more.
+decide whether using EasyTransfer forthe xbee
+is really necessary, since it takes 255 bytes!
+
 tomorrow add in the xbee communication
 
 instead of Serial.available() > 0, try == 4?
