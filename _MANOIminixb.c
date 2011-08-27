@@ -10,8 +10,6 @@
 //#include <Time.h>
 #include <NewSoftSerial.h>
 #include <Streaming.h>
-#include <SoftEasyTransfer.h>
-#include <EasyTransfer.h>
 
 boolean debug = false;
 
@@ -29,37 +27,6 @@ NewSoftSerial nssMANOI(MANOIrx, MANOItx);
 // Trigger flag
 volatile boolean triggerFlag = false;
 
-// EasyTransfer
-SoftEasyTransfer MNrx_ET;
-//EasyTransfer XB_ET;
-
-struct MESH_DATA {
-    //put your variable definitions here for the data you want to receive
-    //THIS MUST BE EXACTLY THE SAME ON THE OTHER ARDUINO
-    int attention;
-    int valence;
-    int stance;
-    
-    int action_t;
-    int action_t0;
-    
-    int robot;
-    
-    int sense_1;
-    int sense_2;
-    int sense_3;
-    int sense_4;
-    int sense_5;
-    
-    int world_L;
-    int world_R;
-    int world_F;
-};
-
-//give a name to the group of data
-MESH_DATA MNdata_rx;
-MESH_DATA XBdata;
-
 // Initialize
 void setup() {
     
@@ -69,7 +36,7 @@ void setup() {
 	Serial.begin(9600);
     
 	nssMANOI.begin(9600);
-    MNrx_ET.begin(details(MNdata_rx), &nssMANOI);
+    //MNrx_ET.begin(details(MNdata_rx), &nssMANOI);
     //XB_ET.begin(details(XBdata), &Serial);
 	
 	// Interrupts
@@ -80,36 +47,24 @@ void setup() {
 	pinMode(LED, OUTPUT);
 	pinMode(STATUS, OUTPUT);
     
-    digitalWrite(LED, HIGH);
-    digitalWrite(STATUS, HIGH);
-    delay(1000);
-    digitalWrite(LED, LOW);
-    digitalWrite(STATUS, LOW);
-    
-    delay(2000);
-    
 	if(debug) Serial << "Done init" << endl;
     
 }
 
 void loop() {
+    fftProgram();
+}
+
+void fftProgram() {
     
-    digitalWrite(LED, HIGH);
-    //XB_ET.sendData();
-    Serial.print("~R2!");
-    delay(5000);
-    digitalWrite(LED, LOW);
-    
-    delay(100);
+    if(Serial.available() > 0) {
+        char c = (char)Serial.read();
+        if(c == 'S') nssMANOI.print(c); //sendMN(c);
+        Serial.flush();
+    }
     
     //digitalWrite(STATUS, !digitalRead(STATUS));
-    
-    //sendMN();
-    
-    //readMN();
-        
-    //}
-    
+	//delay(50);
     
 }
 
@@ -118,7 +73,7 @@ void trigger() {
 }
 
 
-void sendMN() {
+void sendMN(char c) {
     
     int triggerAttemptsCount = 0;
     
@@ -150,25 +105,20 @@ void sendMN() {
         delay(5);
         
         // Sending the message now
-        nssMANOI.print("~A1!");
+        nssMANOI.print(c);
         
         if(debug) Serial << "Sending the message now" << endl;
         
-        digitalWrite(LED, HIGH);
-        delay(1000);
-        digitalWrite(LED, LOW);
+        //digitalWrite(LED, HIGH);
+        //delay(1000);
+        //digitalWrite(LED, LOW);
         
         triggerFlag = false;
         
     }
     
-    
-    digitalWrite(STATUS, !digitalRead(STATUS));
-	delay(50);
-    
     if(debug) Serial << "waiting..." << endl;
-    if(debug) Serial.println("howdy");
-    delay(3000);
+    //delay(3000);
     
 }
 
@@ -186,13 +136,13 @@ void readMN() {
 		digitalWrite(interruptOutgoing, HIGH);
         delay(100);
         
-        if(MNrx_ET.receiveData()) {
-            //if(nssMANOI.available() >= 3) {
+        //if(MNrx_ET.receiveData()) {
+        if(nssMANOI.available() >= 3) {
             
             if(debug) Serial << "it was available!" << endl;
             if(debug) Serial << nssMANOI.read() << endl;
             
-            if(MNdata_rx.attention == 1) {
+            if((nssMANOI.read()-'0') == 1) { // TODO: Fix this
                 
                 if(debug) Serial << "attention was 1!" << endl;
                 

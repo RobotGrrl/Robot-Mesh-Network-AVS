@@ -13,7 +13,6 @@
 #include <stdio.h>
 #include <Wire.h>
 #include <Time.h>
-#include <EasyTransfer.h>
 
 boolean debug = true;
 
@@ -156,40 +155,8 @@ int commAttemptCount = 0;
 // Trigger flag
 volatile boolean triggerFlag = false;
 
-// EasyTransfer
-EasyTransfer ET;
-
-struct MESH_DATA {
-    //put your variable definitions here for the data you want to send
-    //THIS MUST BE EXACTLY THE SAME ON THE OTHER ARDUINO
-    int attention;
-    int valence;
-    int stance;
-    
-    int action_t;
-    int action_t0;
-    
-    int robot;
-    
-    int sense_1;
-    int sense_2;
-    int sense_3;
-    int sense_4;
-    int sense_5;
-    
-    int world_L;
-    int world_R;
-    int world_F;
-};
-
-MESH_DATA MNdata_tx;
-
 int rxBuffer[128];
 int rxIndex = 0;
-
-int action = 0;
-
-#define LENGTH 4
 
 // Initialize
 void setup() {
@@ -199,7 +166,6 @@ void setup() {
 	Serial1.begin(9600); // Comm
 	Serial2.begin(9600); // I forget
     Serial3.begin(9600); // I forget
-    ET.begin(details(MNdata_tx), &Serial1); // Comm
     
 	// Outputs
 	pinMode(LED, OUTPUT);
@@ -262,51 +228,57 @@ void setup() {
 	//nunchuck_init();
 	
 	ssc.setFrame(homeFrame, 100, 100);
-	
-    // ET Data
-    MNdata_tx.attention = 1;
-    MNdata_tx.valence = 0;
-    MNdata_tx.stance = 0;
-    
-    MNdata_tx.action_t = 0;
-    MNdata_tx.action_t0 = 0;
-    
-    MNdata_tx.robot = 0;
-    
-    MNdata_tx.sense_1 = 0;
-	MNdata_tx.sense_2 = 0;
-    MNdata_tx.sense_3 = 0;
-    MNdata_tx.sense_4 = 0;
-    MNdata_tx.sense_5 = 0;
-    
-    MNdata_tx.world_L = 0;
-    MNdata_tx.world_R = 0;
-    MNdata_tx.world_F = 0;
-    
-    delay(3000);
-    //Serial1 << "heeeeeeeeeeeeeeeyyyooooooooooooooo" << endl;
-    //ET.sendData();
-    sendET();
     
 }
 
 void loop() {
     
-    //updateLights();
-    //sendET();
-    //delay(1000);
-    
-    //bothArmJingle(1);
-    //feetJingle(1);
-    //rightHandShake(1);
-    //leftArmJingle(1);
-    //tango(1);
-    
-    readComm();
-    
+    fftProgram();
 	
 }
 
+void fftProgram() {
+    
+    if(Serial1.available() > 0) {
+        char c = (char)Serial1.read();
+        if(c == 'S') {
+            rightHandShakeSorta(1);
+            if(debug) Serial << "r" << endl;
+        }
+        Serial.flush();
+    }
+    
+    /*
+    while(!triggerFlag) {
+        if(debug) Serial << "Trigger flag is false..." << endl;
+        updateLights();
+    }
+    
+    if(triggerFlag) {
+        
+        Serial << "The trigger flag!" << endl;
+        
+        
+        // Send the flag to receive the message
+        digitalWrite(interruptOutgoing, HIGH);
+        delay(5);
+        digitalWrite(interruptOutgoing, LOW);
+        
+        if(Serial1.available() > 0) {
+            char c = (char)Serial1.read();
+            
+            if(c == 'S') rightHandShake(1);
+            
+        }
+        
+        Serial1.flush();
+        triggerFlag = false;
+        
+    }
+     */
+    
+}
+/*
 void readComm() {
     
     
@@ -367,7 +339,7 @@ void readComm() {
     }
     
 }
-
+*/
 void trigger() {
 	triggerFlag = true;
 }
@@ -530,7 +502,7 @@ void sendPToComm() {
     triggerAttemptCount = 0;
     
 }
-
+/*
 void sendET() {
     
     digitalWrite(interruptOutgoing, HIGH);
@@ -566,5 +538,5 @@ void sendET() {
     triggerAttemptCount = 0;
     
 }
-
+*/
 

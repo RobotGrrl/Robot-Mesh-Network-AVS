@@ -10,7 +10,6 @@
 #include <Time.h>
 #include <Servo.h> 
 #include <Streaming.h>
-#include <EasyTransfer.h>
 
 boolean debug = true;
 
@@ -18,7 +17,7 @@ boolean debug = true;
 Servo mouth, leftwing, rightwing, leftright, updown;
 
 // Sensor pins
-int pir(A0), tiltFB(1), tiltLR(2), ldrL(3), ldrR(4);
+int pir(0), tiltFB(1), tiltLR(2), ldrL(3), ldrR(4);
 
 // Servo pins
 int mouthPin(8), leftwingPin(7), rightwingPin(6);
@@ -69,6 +68,7 @@ int currentDir = 1;
 int ldrLprev = 0;
 int ldrRprev = 0;
 int pos = 0;
+boolean passive = false;
 
 // Counters
 int triggerAttemptCount = 0;
@@ -77,41 +77,14 @@ int commAttemptCount = 0;
 // Trigger flag
 volatile boolean triggerFlag = false;
 
-// EasyTransfer
-EasyTransfer CommTX;
-EasyTransfer CommRX;
-
-struct MESH_DATA {
-    //put your variable definitions here for the data you want to send
-    //THIS MUST BE EXACTLY THE SAME ON THE OTHER ARDUINO
-    int attention;
-    int valence;
-    int stance;
-    
-    int action_t;
-    int action_t0;
-    
-    int robot;
-    
-    int sense_1;
-    int sense_2;
-    int sense_3;
-    int sense_4;
-    int sense_5;
-    
-    int world_L;
-    int world_R;
-    int world_F;
-};
-
-MESH_DATA RBdata_tx;
-
 int rxBuffer[128];
 int rxIndex = 0;
 
 int action = 0;
 
-#define LENGTH 4
+boolean direction = true;
+
+int sendFirst = 0;
 
 // Initialize
 void setup() {
@@ -120,8 +93,7 @@ void setup() {
 	Serial.begin(9600);  // Console
     Serial1.begin(9600); // Comm
 	Serial2.begin(9600); // iPad
-    CommTX.begin(details(RBdata_tx), &Serial1); // Comm TX
-    CommRX.begin(details(RBdata_rx), &Serial1); // Comm RX
+    Serial3.begin(9600); // Xbee plug
     
 	// Interrupts
 	pinMode(interruptOutgoing, OUTPUT);
@@ -159,58 +131,227 @@ void setup() {
     // Home positions
     leftwing.write(90);
     rightwing.write(20);
+    
+    /*
+    for(int i=0; i<180; i++) {
+        leftright.write(i);
+        delay(10);
+    }
+    */
+     
     leftright.write(90);
     updown.write(95);
     moveBeak(180, 2, 10);
     
-    // ET Data
-    RBdata_rx.action = 0;
-    RBdata_rx.param_1 = 0;
-    RBdata_rx.param_2 = 0;
-    RBdata_rx.param_3 = 0;
-    RBdata_rx.param_4 = 0;
-    RBdata_rx.param_5 = 0;
+    boolean alt = false;
+    for(int i=0; i<2; i++) {
+        moveRightWing(alt);
+        alt = !alt;
+        delay(100);
+    }
     
-    RBdata_tx.attention = 1;
-    RBdata_tx.valence = 0;
-    RBdata_tx.stance = 0;
-    
-    RBdata_tx.action_t = 0;
-    RBdata_tx.action_t0 = 0;
-    
-    RBdata_tx.robot = 0;
-    
-    RBdata_tx.sense_1 = 0;
-	RBdata_tx.sense_2 = 0;
-    RBdata_tx.sense_3 = 0;
-    RBdata_tx.sense_4 = 0;
-    RBdata_tx.sense_5 = 0;
-    
-    RBdata_tx.world_L = 0;
-    RBdata_tx.world_R = 0;
-    RBdata_tx.world_F = 0;
-    
-    //delay(3000);
-    //sendET();
+    if(debug) Serial << "woo!" << endl;
     
 }
 
 void loop() {
+    //adkProgram();
+    //dancePartyProgram();
+    cosmicSoapProgram();
+}
+
+void cosmicSoapProgram() {
     
-    //updateLights(false);
-    //delay(1000);
-    readComm();
+    if(Serial3.available() > 0) {
+        
+        char c = (char)Serial3.read();
+        if(c == 'B') {
+            direction = !direction;
+        }
+        
+        if(direction) { // go to left
+            leftright.write(leftright.read()-10);
+        } else { // go to right
+            leftright.write(leftright.read()+10);
+        }
+        
+        Serial3.flush();
+        updateLights(false);
+        
+    }
+
+    int ldrL_t = analogRead(ldrL);
+    int ldrR_t = analogRead(ldrR);
+    int pir_t = analogRead(pir);
     
+    if(sendFirst%3 == 0) {
     
-    //pirBehaviour(analogRead(pir));
-    //ldrBehaviour(analogRead(ldrL), analogRead(ldrR));
-    //peekABooBehaviour(analogRead(ldrL), analogRead(ldrR));
-    //partyBehaviour();
-    //passiveRoutine();
+        sendldrL(ldrL_t);
+        sendldrR(ldrR_t);
     
+    } else if(sendFirst%3 == 1) {
+    
+        sendldrR(ldrR_t);
+        sendpir(pir_t);
+        
+    } else if(sendFirst%3 == 2) {
+        
+        sendpir(pir_t);
+        sendldrL(ldrL_t);
+        
+    }
+    
+    sendFirst++;
+        
+}
+
+void sendldrL(int ldrL_t) {
+    if(ldrL_t >= 1000) {
+        Serial3 << "#L" << ldrL_t << "!";
+    } else if(ldrL_t >= 100) {
+        Serial3 << "#L0" << ldrL_t << "!";
+    } else if(ldrL_t >= 10) {
+        Serial3 << "#L00" << ldrL_t << "!";
+    } else if(ldrL_t >= 0) {
+        Serial3 << "#L000" << ldrL_t << "!";
+    }
+}
+
+void sendldrR(int ldrR_t) {
+    if(ldrR_t >= 1000) {
+        Serial3 << "#R" << ldrR_t << "!";
+    } else if(ldrR_t >= 100) {
+        Serial3 << "#R0" << ldrR_t << "!";
+    } else if(ldrR_t >= 10) {
+        Serial3 << "#R00" << ldrR_t << "!";
+    } else if(ldrR_t >= 0) {
+        Serial3 << "#R000" << ldrR_t << "!";
+    }
+}
+
+void sendpir(int pir_t) {
+    if(pir_t >= 1000) {
+        Serial3 << "#P" << pir_t << "!";
+    } else if(pir_t >= 100) {
+        Serial3 << "#P0" << pir_t << "!";
+    } else if(pir_t >= 10) {
+        Serial3 << "#P00" << pir_t << "!";
+    } else if(pir_t >= 0) {
+        Serial3 << "#P000" << pir_t << "!";
+    }
+}
+
+
+void dancePartyProgram() {
+    
+    if(Serial1.available() > 0) {
+        char c = (char)Serial1.read();
+        if(c == 'B') {
+            direction = !direction;
+        }
+        
+        if(direction) { // go to left
+            leftright.write(leftright.read()-10);
+        } else { // go to right
+            leftright.write(leftright.read()+10);
+        }
+        
+        Serial1.flush();
+        updateLights(false);
+        
+    }
     
 }
 
+void adkProgram() {
+    
+    if(Serial1.available() > 0) {
+        char c = (char)Serial1.read();
+        Serial.println(c);
+        if(c == 'A') {
+            // big spell
+            for(int i=0; i<10; i++) {
+                randomBeak();
+            }
+            
+        } else if(c == 'B') {
+            // small spell
+            boolean alt = false;
+            for(int i=0; i<10; i++) {
+                moveRightWing(alt);
+                moveLeftWing(alt);
+                alt = !alt;
+                delay(10);
+            }
+        } else if(c == 'C') {
+            updateLights(true);
+        }
+        Serial1.flush();
+    }
+    
+}
+
+void fftProgram() {
+    
+    if(Serial1.available() > 0) {
+        char c = (char)Serial1.read();
+        if(c == 'K') {
+            
+            boolean alt = false;
+            for(int i=0; i<2; i++) {
+                moveRightWing(alt);
+                alt = !alt;
+                delay(100);
+            }
+            
+            if(debug) Serial << "r" << endl;
+        }
+        Serial1.flush();
+    }
+    
+    if(debug) Serial << "a";
+    
+    /*
+    while(!triggerFlag) {
+        if(debug) Serial << "Trigger flag is false..." << endl;
+        updateLights(false);
+    }
+    
+    if(triggerFlag) {
+        
+        Serial << "The trigger flag!" << endl;
+        
+        
+        // Send the flag to receive the message
+        digitalWrite(interruptOutgoing, HIGH);
+        delay(5);
+        digitalWrite(interruptOutgoing, LOW);
+        
+        if(Serial1.available() > 0) {
+            char c = (char)Serial1.read();
+            
+            if(debug) Serial << "Received: " << c << endl;
+            
+            if(c == 'K') {
+                boolean alt = false;
+                for(int i=0; i<5; i++) {
+                    moveRightWing(alt);
+                    alt = !alt;
+                    delay(50);
+                }
+            }
+            
+        }
+        
+        Serial1.flush();
+        triggerFlag = false;
+        
+    }
+     */
+    
+}
+
+/*
 void readComm() {
     
     
@@ -276,7 +417,8 @@ void readComm() {
     }
     
 }
-
+*/
+ 
 void trigger() {
 	triggerFlag = true;
 }
@@ -441,6 +583,7 @@ void sendPToComm() {
     
 }
 
+/*
 void sendET() {
 
     digitalWrite(interruptOutgoing, HIGH);
@@ -475,7 +618,7 @@ void sendET() {
     triggerAttemptCount = 0;
     
 }
-
+*/
 
 
 void passiveRoutine() {
